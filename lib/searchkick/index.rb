@@ -312,7 +312,11 @@ module Searchkick
     protected
 
     def client
-      Searchkick.client
+      if @name&.starts_with?('events_v')
+        Searchkick.client_events
+      else
+        Searchkick.client
+      end
     end
 
     def queue_index(records)
