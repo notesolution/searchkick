@@ -19,7 +19,11 @@ module Searchkick
 
       return if items.empty?
 
-      response = Searchkick.client.bulk(body: items)
+      is_events = items[0][:index] && items[0][:index][:_index] && items[0][:index][:_index].starts_with?('events_v') rescue false
+      client = is_events ? Searchkick.client_events : Searchkick.client
+
+      response = client.bulk(body: items)
+
       if response["errors"]
         # note: delete does not set error when item not found
         first_with_error = response["items"].map do |item|

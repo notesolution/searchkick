@@ -56,7 +56,7 @@ module Searchkick
 
   class << self
     attr_accessor :search_method_name, :timeout, :models, :client_options, :redis, :index_prefix, :index_suffix, :queue_name, :model_options, :client_type
-    attr_writer :client, :env, :search_timeout
+    attr_writer :client, :client_events, :env, :search_timeout
     attr_reader :aws_credentials
   end
   self.search_method_name = :search
@@ -109,6 +109,19 @@ module Searchkick
         end
       end
     end
+  end
+
+  def self.client_events
+    @client_events ||= begin
+                        Elasticsearch::Client.new({
+                                                    url: ENV["ELASTICSEARCH_URL2"] || 'http://localhost:9201',
+                                                    transport_options: {request: {timeout: timeout}, headers: {content_type: "application/json"}},
+                                                    retry_on_failure: 2
+                                                  }.deep_merge(client_options)) do |f|
+                          f.use Searchkick::Middleware
+                          f.request :aws_sigv4, signer_middleware_aws_params if aws_credentials
+                        end
+                      end
   end
 
   def self.env
@@ -240,6 +253,7 @@ module Searchkick
 
     @aws_credentials = creds
     @client = nil # reset client
+    @client_events = nil # reset client
   end
 
   def self.reindex_status(index_name)

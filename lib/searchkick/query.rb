@@ -240,7 +240,11 @@ module Searchkick
         query: params
       }
       ActiveSupport::Notifications.instrument("search.searchkick", event) do
-        Searchkick.client.search(params)
+        if searchkick_klass.name == 'Event'
+          Searchkick.client_events.search(params)
+        else
+          Searchkick.client.search(params)
+        end
       end
     end
 
